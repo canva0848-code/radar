@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>رادار الأسواق — أخبار الكريبتو والذهب والأسواق المالية</title>
+<meta name="description" content="تجميع حي لأخبار العملات المشفرة والذهب والأسواق المالية من مصادر عربية وعالمية.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="رادار الأسواق">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6f8;--card:#fff;--text:#14181f;--muted:#667085;--line:#e4e7ec;--accent:#2f6fed;
+  --crypto:#f7931a;--gold:#c9970b;--markets:#2f7de1;--ok:#12a150;--bad:#d92d20;
+  --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+[data-theme="dark"]{
+  --bg:#0e1116;--card:#171b22;--text:#e8ecf2;--muted:#98a2b3;--line:#262c36;--accent:#6b9bff;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Cairo","Segoe UI",Tahoma,Arial,sans-serif;line-height:1.6}
+header{position:sticky;top:0;z-index:10;padding-top:env(safe-area-inset-top);background:var(--card);border-bottom:1px solid var(--line)}
+.wrap{max-width:860px;margin:0 auto;padding:0 14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0 4px}
+h1{font-size:19px;margin:0;font-weight:700}
+h1 small{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+.btns{display:flex;gap:6px}
+.icon-btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;
+  width:38px;height:38px;font-size:17px;cursor:pointer;font-family:inherit}
+.icon-btn:active{transform:scale(.95)}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(-360deg)}}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:6px 0 10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:999px;padding:5px 14px;font:600 14px/1.5 inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.tab .n{font-weight:400;color:var(--muted);margin-inline-start:4px;font-size:12px}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab[aria-selected="true"] .n{color:#e7eeff}
+.filters{display:flex;gap:8px;padding-bottom:10px}
+.filters input,.filters select{font-family:inherit;font-size:14px;border:1px solid var(--line);
+  background:var(--bg);color:var(--text);border-radius:10px;padding:7px 10px;min-width:0}
+.filters input{flex:1}
+.statusbar{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font-size:12px;color:var(--muted);padding:10px 0 4px}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-size:12px;cursor:pointer;padding:0}
+#sources{display:none;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:8px 12px;margin:4px 0 8px;font-size:12px}
+#sources.open{display:block}
+#sources div{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line)}
+#sources div:last-child{border:0}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.prices{display:flex;gap:16px;overflow-x:auto;padding:2px 0 8px;font-size:13px;white-space:nowrap;scrollbar-width:none}
+.prices::-webkit-scrollbar{display:none}
+.pr b{margin-inline-end:4px}
+.pr i{font-style:normal;font-size:11.5px;margin-inline-start:4px}
+.up{color:var(--ok)}.dn{color:var(--bad)}
+#brkbar{display:none;align-items:center;gap:10px;background:#d92d20;color:#fff;border-radius:10px;padding:6px 10px;margin:2px 0 8px;font-size:14px}
+#brkbar .tag{background:#fff;color:#d92d20;font-weight:700;border-radius:6px;padding:0 8px;font-size:12px;flex:0 0 auto;animation:blink 1.4s ease-in-out infinite}
+#brkbar a{color:#fff;text-decoration:none;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#brkbar .cnt{font-size:11px;opacity:.85;flex:0 0 auto}
+@keyframes blink{50%{opacity:.55}}
+.brk h2{font-size:15px;margin:12px 0 0;color:var(--bad)}
+.card.urgent{border-inline-start:4px solid var(--bad)}
+main{padding-bottom:40px}
+.card{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:12px;margin:8px 0;box-shadow:var(--shadow)}
+.card img{width:92px;height:92px;object-fit:cover;border-radius:10px;flex:0 0 auto;background:var(--line)}
+.body{min-width:0;flex:1}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.badge{color:#fff;border-radius:6px;padding:0 8px;font-weight:600;font-size:11px}
+.badge[data-cat="crypto"]{background:var(--crypto)}
+.badge[data-cat="gold"]{background:var(--gold)}
+.badge[data-cat="markets"]{background:var(--markets)}
+.title{display:block;color:var(--text);text-decoration:none;font-weight:700;font-size:16px;margin:4px 0 2px;line-height:1.5}
+.title:hover{color:var(--accent)}
+.desc{margin:2px 0 6px;font-size:13.5px;color:var(--muted)}
+.actions{display:flex;gap:14px;font-size:12.5px}
+.actions a{color:var(--accent);text-decoration:none}
+.orig{font-size:12px;color:var(--muted);direction:ltr;text-align:left;margin:0 0 3px;line-height:1.4}
+.icon-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.state{text-align:center;color:var(--muted);padding:40px 10px}
+.more{display:block;margin:14px auto;border:1px solid var(--line);background:var(--card);color:var(--text);
+  border-radius:10px;padding:8px 22px;font-family:inherit;font-size:14px;cursor:pointer}
+footer{color:var(--muted);font-size:11.5px;text-align:center;padding:0 14px 30px}
+@media (max-width:420px){.card img{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>رادار الأسواق <small>كريبتو • ذهب • أسواق مالية</small></h1>
+      <div class="btns">
+        <button class="icon-btn on" id="trbtn" title="ترجمة تلقائية للعربية" aria-label="ترجمة تلقائية">ع</button>
+        <button class="icon-btn" id="bell" title="إشعارات العاجل" aria-label="إشعارات العاجل">🔕</button>
+        <button class="icon-btn" id="refresh" title="تحديث" aria-label="تحديث">⟳</button>
+        <button class="icon-btn" id="theme" title="الوضع الليلي" aria-label="تبديل الوضع الليلي">☾</button>
+      </div>
+    </div>
+    <div class="prices" id="prices" aria-label="الأسعار"></div>
+    <div id="brkbar" role="status"></div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="filters">
+      <input id="q" type="search" placeholder="ابحث في العناوين…" aria-label="بحث">
+      <select id="lang" aria-label="اللغة">
+        <option value="all">كل اللغات</option>
+        <option value="ar">عربي</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="statusbar">
+    <span id="updated">…</span>
+    <button class="linkbtn" id="toggleSources">حالة المصادر</button>
+  </div>
+  <div id="sources"></div>
+  <main id="list" aria-live="polite"></main>
+</div>
+<footer>الأخبار من مصادر خارجية وتُعرض كما هي، وليست نصيحة استثمارية. راجع قوانين بلدك، فقد تكون العملات المشفرة والتداول ممنوعة في بعض الدول.</footer>
+
+<script>
+(function () {
+'use strict';
+
+/* ============================================================
+   المصادر — عدّل هذه القائمة كما تشاء (أضف/احذف روابط RSS)
+   cat: crypto | gold | markets      lang: ar | en
+   ============================================================ */
+function gn(q, lang) {               // بحث أخبار جوجل (RSS)
+  var ar = lang === 'ar';
+  return 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) +
+    (ar ? '&hl=ar&gl=SA&ceid=SA:ar' : '&hl=en-US&gl=US&ceid=US:en');
+}
+function yf(sym) {                   // خلاصة عناوين Yahoo Finance لرمز معيّن
+  return 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=' + encodeURIComponent(sym) + '&region=US&lang=en-US';
+}
+/* auto:true = يُصنَّف كل خبر تلقائيًا (ذهب / كريبتو / أسواق) حسب كلمات العنوان */
+var SOURCES = [
+  // كريبتو
+  { name: 'Cointelegraph', cat: 'crypto', lang: 'en', url: 'https://cointelegraph.com/rss' },
+  { name: 'CoinDesk',      cat: 'crypto', lang: 'en', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/' },
+  { name: 'Decrypt',       cat: 'crypto', lang: 'en', url: 'https://decrypt.co/feed' },
+  { name: 'Cointelegraph عربي', cat: 'crypto', lang: 'ar', url: 'https://ar.cointelegraph.com/rss' },
+  // الذهب
+  { name: 'Yahoo Finance — الذهب', cat: 'gold', lang: 'en', url: yf('GC=F,GLD') },
+  // الأسواق (تُصنَّف تلقائيًا، فيدخل منها الذهب والكريبتو في تبويباتها)
+  { name: 'الشرق للأعمال', cat: 'markets', lang: 'ar', auto: true, url: 'https://asharqbusiness.com/rss.xml' },
+  { name: 'CNBC Finance',  cat: 'markets', lang: 'en', auto: true, url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html' },
+  { name: 'Yahoo Finance', cat: 'markets', lang: 'en', auto: true, url: 'https://finance.yahoo.com/news/rssindex' },
+  { name: 'MarketWatch',   cat: 'markets', lang: 'en', auto: true, url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
+  // أخبار جوجل: قد يحجبها بعض الوسطاء، وإن تعذّرت يظهر السبب في «حالة المصادر»
+  { name: 'أخبار جوجل — كريبتو (عربي)', cat: 'crypto', lang: 'ar', gnews: true,
+    url: gn('بيتكوين OR كريبتو OR "العملات الرقمية" OR "العملات المشفرة" when:3d', 'ar') },
+  { name: 'أخبار جوجل — الذهب (عربي)', cat: 'gold', lang: 'ar', gnews: true,
+    url: gn('"سعر الذهب" OR "أسعار الذهب" OR "أوقية الذهب" when:3d', 'ar') },
+  { name: 'أخبار جوجل — الأسواق (عربي)', cat: 'markets', lang: 'ar', gnews: true, auto: true,
+    url: gn('البورصة OR "وول ستريت" OR "الأسواق المالية" OR "أسعار النفط" OR الدولار when:2d', 'ar') }
+];
+
+var CATS = { crypto: 'كريبتو', gold: 'الذهب', markets: 'الأسواق' };
+var REFRESH_MS = 3 * 60 * 1000;
+var BASE_TITLE = document.title;
+var CACHE_KEY = 'mr_cache_v1';
+var CACHE_MAX_AGE = 10 * 60 * 1000;
+var PAGE = 30;
+
+var PROXIES = [
+  function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+  function (u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
+  function (u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+];
+
+/* ---------------- أدوات ---------------- */
+function $(s) { return document.querySelector(s); }
+
+function h(tag, attrs) {
+  var el = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+  for (var i = 2; i < arguments.length; i++) {
+    var c = arguments[i];
+    if (c == null) continue;
+    el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return el;
+}
+
+function store(key, val) {
+  try {
+    if (val === undefined) return JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) { return null; }
+}
+
+function stripHtml(html) {
+  if (!html) return '';
+  var d = new DOMParser().parseFromString(String(html), 'text/html');
+  return (d.body.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function parseDate(s, utcNoTz) {
+  if (!s) return 0;
+  s = String(s).trim();
+  if (utcNoTz && /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(s)) s = s.replace(' ', 'T') + 'Z';
+  var t = new Date(s).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function plural(n, f) {            // f = [مفرد، مثنى، قليل (3-10)، كثير]
+  if (n === 1) return f[0];
+  if (n === 2) return f[1];
+  if (n >= 3 && n <= 10) return n + ' ' + f[2];
+  return n + ' ' + f[3];
+}
+function ago(ms) {
+  var s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 60) return 'الآن';
+  var m = Math.floor(s / 60);
+  if (m < 60) return 'منذ ' + plural(m, ['دقيقة', 'دقيقتين', 'دقائق', 'دقيقة']);
+  var hr = Math.floor(m / 60);
+  if (hr < 24) return 'منذ ' + plural(hr, ['ساعة', 'ساعتين', 'ساعات', 'ساعة']);
+  var d = Math.floor(hr / 24);
+  return 'منذ ' + plural(d, ['يوم', 'يومين', 'أيام', 'يومًا']);
+}
+
+function titleKey(t) {
+  return t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().slice(0, 70);
+}
+function dedupe(items) {
+  var seen = Object.create(null), out = [];
+  items.forEach(function (it) {
+    var k = titleKey(it.title) || it.link;
+    if (seen[k]) return;
+    seen[k] = 1; out.push(it);
+  });
+  return out;
+}
+
+/* ---------------- الجلب ---------------- */
+function timedFetch(url, ms) {
+  var c = new AbortController();
+  var t = setTimeout(function () { c.abort(); }, ms || 12000);
+  return fetch(url, { signal: c.signal }).then(function (r) {
+    clearTimeout(t);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r;
+  }, function (e) { clearTimeout(t); throw e; });
+}
+
+function viaRss2Json(src) {
+  return timedFetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(src.url))
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j.status !== 'ok' || !Array.isArray(j.items)) throw new Error(j.message || 'rss2json');
+      return j.items.map(function (it) {
+        var img = it.thumbnail || '';
+        if (!img && it.enclosure && it.enclosure.link && /\.(jpe?g|png|webp|gif)(\?|$)/i.test(it.enclosure.link)) img = it.enclosure.link;
+        return { title: it.title, link: it.link, date: parseDate(it.pubDate, true), desc: it.description, img: img };
+      });
+    });
+}
+
+function viaProxy(src, proxy) {
+  return timedFetch(proxy(src.url)).then(function (r) { return r.text(); }).then(function (txt) {
+    var doc = new DOMParser().parseFromString(txt, 'text/xml');
+    if (doc.querySelector('parsererror')) throw new Error('XML');
+    var nodes = Array.prototype.slice.call(doc.querySelectorAll('item, entry'));
+    if (!nodes.length) throw new Error('no items');
+    function tx(el, names) {
+      for (var i = 0; i < names.length; i++) {
+        var n = el.getElementsByTagName(names[i])[0];
+        if (n && n.textContent) return n.textContent;
+      }
+      return '';
+    }
+    return nodes.map(function (el) {
+      var link = tx(el, ['link']);
+      if (!link) { var l = el.querySelector('link[href]'); link = l ? l.getAttribute('href') : ''; }
+      var img = '';
+      var mt = el.getElementsByTagName('media:thumbnail')[0] || el.getElementsByTagName('media:content')[0];
+      if (mt && mt.getAttribute('url')) img = mt.getAttribute('url');
+      if (!img) {
+        var en = el.querySelector('enclosure[url]');
+        if (en && /image/i.test(en.getAttribute('type') || '')) img = en.getAttribute('url');
+      }
+      return {
+        title: tx(el, ['title']), link: link.trim(),
+        date: parseDate(tx(el, ['pubDate', 'published', 'updated', 'dc:date'])),
+        desc: tx(el, ['description', 'summary', 'content']), img: img
+      };
+    });
+  });
+}
+
+function fetchSource(src) {
+  var errs = [];
+  var chain = viaRss2Json(src).catch(function (e) { errs.push(e.message); throw e; });
+  PROXIES.forEach(function (p) {
+    chain = chain.catch(function () {
+      return viaProxy(src, p).catch(function (e) { errs.push(e.message); throw e; });
+    });
+  });
+  return chain.catch(function () { throw new Error(errs.join(' | ')); });
+}
+
+var GOLD_RE = /ذهب|الذهب|أونصة|الأونصة|\bgold\b|bullion|\bXAU/i;
+var CRYPTO_RE = /بيتكوين|بتكوين|كريبتو|العملات الرقمية|العملات المشفرة|مشفرة|إيثريوم|إيثيريوم|بينانس|\bbitcoin\b|\bcrypto|ethereum|\bBTC\b|\bETH\b|stablecoin/i;
+function pickCat(title, src) {
+  if (!src.auto) return src.cat;
+  if (GOLD_RE.test(title)) return 'gold';
+  if (CRYPTO_RE.test(title)) return 'crypto';
+  return src.cat;
+}
+
+function normalize(raw, src) {
+  var title = stripHtml(raw.title), publisher = '';
+  if (!title || !/^https?:\/\//i.test(raw.link || '')) return null;
+  if (src.gnews) {                       // "العنوان - اسم الموقع"
+    var i = title.lastIndexOf(' - ');
+    if (i > 10) { publisher = title.slice(i + 3).trim(); title = title.slice(0, i).trim(); }
+  }
+  var desc = src.gnews ? '' : stripHtml(raw.desc);
+  if (desc.length > 190) desc = desc.slice(0, 190).replace(/\s+\S*$/, '') + '…';
+  if (desc && titleKey(desc).indexOf(titleKey(title).slice(0, 30)) === 0) desc = '';
+  return {
+    title: title, link: raw.link, date: raw.date || 0, desc: desc,
+    img: /^https:\/\//i.test(raw.img || '') ? raw.img : '',
+    source: publisher || src.name, cat: pickCat(title, src), lang: src.lang
+  };
+}
+
+/* ---------------- العاجل ----------------
+   خبر عاجل = (1) عنوانه يحمل كلمة صريحة مثل «عاجل» أو Breaking/Just in وعمره أقل من 6 ساعات،
+   أو (2) عنوانه يحمل كلمة حركة قوية (انهيار/قياسي/crash/plunge…) وعمره أقل من 90 دقيقة. */
+var BRK_RE = /عاجل|^\W*breaking\s*[:\-–—|!]|breaking news|just in\b|urgent|🚨|⚡/i;
+var MOVE_RE = /ينهار|انهيار|يتهاوى|يهوي|يقفز|يشتعل|قياسي|تاريخي|crash|plunge|tumbl|soar|skyrocket|record high|all-time high/i;
+var BRK_WINDOW = 6 * 3600 * 1000, MOVE_WINDOW = 90 * 60 * 1000;
+function isBreaking(it) {
+  if (!it.date) return false;
+  var age = Math.max(0, Date.now() - it.date);
+  if (age <= BRK_WINDOW && BRK_RE.test(it.title)) return true;
+  return age <= MOVE_WINDOW && MOVE_RE.test(it.title);
+}
+
+var brkList = [], brkIdx = 0;
+function renderBar() {
+  var bar = $('#brkbar');
+  brkList = state.items.filter(isBreaking).slice(0, 6);
+  bar.textContent = '';
+  if (!brkList.length) { bar.style.display = 'none'; return; }
+  brkIdx = brkIdx % brkList.length;
+  var it = brkList[brkIdx];
+  bar.style.display = 'flex';
+  bar.appendChild(h('span', { 'class': 'tag' }, 'عاجل'));
+  bar.appendChild(h('a', { dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, tr(it.title) || it.title));
+  bar.appendChild(h('span', { 'class': 'cnt' }, (brkIdx + 1) + '/' + brkList.length));
+}
+
+function notifyOk() {
+  try { return 'Notification' in window && Notification.permission === 'granted'; } catch (e) { return false; }
+}
+function setBell() { $('#bell').textContent = (state.notifyOn && notifyOk()) ? '🔔' : '🔕'; }
+
+function afterUpdate() {
+  var brk = state.items.filter(isBreaking);
+  document.title = (brk.length ? '(' + brk.length + ') ' : '') + BASE_TITLE;
+  var seen = store('mr_seen') || [], set = Object.create(null);
+  seen.forEach(function (l) { set[l] = 1; });
+  var fresh = brk.filter(function (i) { return !set[i.link]; });
+  if (seen.length && fresh.length && state.notifyOn && notifyOk()) {
+    fresh.slice(0, 3).forEach(function (i) {
+      try { new Notification('عاجل — ' + i.source, { body: tr(i.title) || i.title, tag: i.link }); } catch (e) {}
+    });
+  }
+  brk.forEach(function (i) { set[i.link] = 1; });
+  store('mr_seen', Object.keys(set).slice(-300));
+}
+
+/* ---------------- الأسعار (CoinGecko) ---------------- */
+var PRICE_IDS = [['bitcoin', 'BTC', ''], ['ethereum', 'ETH', ''],
+  ['pax-gold', 'ذهب', 'سعر رمز PAXG المدعوم بأونصة ذهب — مؤشر قريب لسعر الأونصة وليس سعر البورصة الرسمي']];
+function loadPrices() {
+  var ids = PRICE_IDS.map(function (p) { return p[0]; }).join(',');
+  return timedFetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true', 10000)
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      var box = $('#prices'), n = 0;
+      var frag = document.createDocumentFragment();
+      PRICE_IDS.forEach(function (p) {
+        var d = j[p[0]];
+        if (!d || typeof d.usd !== 'number') return;
+        var ch = d.usd_24h_change, up = ch >= 0;
+        frag.appendChild(h('span', { 'class': 'pr', title: p[2] },
+          h('b', null, p[1]),
+          '$' + d.usd.toLocaleString('en-US', { maximumFractionDigits: d.usd < 10 ? 2 : 0 }),
+          typeof ch === 'number' ? h('i', { 'class': up ? 'up' : 'dn' }, (up ? '▲ ' : '▼ ') + Math.abs(ch).toFixed(1) + '%') : null));
+        n++;
+      });
+      if (n) { box.textContent = ''; box.appendChild(frag); }
+    }).catch(function () {});
+}
+
+/* ---------------- الترجمة التلقائية للعربية ----------------
+   تُترجم العناوين والملخصات الإنجليزية للعناصر الظاهرة فقط، وتُحفظ في المتصفح فلا تُعاد. */
+var trCache = store('mr_tr') || {};
+var trTried = Object.create(null), gtxFails = 0;
+function tr(text) { return (state.translate && text && trCache[text]) || ''; }
+function saveTr() {
+  var k = Object.keys(trCache);
+  if (k.length > 700) k.slice(0, k.length - 700).forEach(function (x) { delete trCache[x]; });
+  store('mr_tr', trCache);
+}
+function gtxBatch(texts) {                       // سطر لكل نص، ثم نقسم الناتج على الأسطر
+  var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=' +
+    encodeURIComponent(texts.join('\n'));
+  return timedFetch(url, 12000).then(function (r) { return r.json(); }).then(function (j) {
+    var out = '';
+    (j && j[0] || []).forEach(function (seg) { if (seg && seg[0]) out += seg[0]; });
+    var lines = out.replace(/\n+$/, '').split('\n');
+    if (lines.length !== texts.length) throw new Error('mismatch');
+    return lines.map(function (l) { return l.trim(); });
+  });
+}
+function myMemory(t) {                           // مزوّد احتياطي
+  return timedFetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(t.slice(0, 480)) + '&langpair=en|ar', 10000)
+    .then(function (r) { return r.json(); }).then(function (j) {
+      var x = j && j.responseData && j.responseData.translatedText;
+      if (!x || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(x)) throw new Error('mm');
+      return x;
+    });
+}
+function translateOne(t) {
+  if (gtxFails < 2) {
+    return gtxBatch([t]).then(function (r) { gtxFails = 0; return r[0]; })
+      .catch(function () { gtxFails++; return myMemory(t); });
+  }
+  return myMemory(t);
+}
+function translateSeq(group) {
+  var out = [], p = Promise.resolve();
+  group.forEach(function (t, i) {
+    p = p.then(function () { return translateOne(t).then(function (x) { out[i] = x; }, function () { out[i] = ''; }); });
+  });
+  return p.then(function () { return out; });
+}
+function translateGroup(group) {
+  if (gtxFails >= 2) return translateSeq(group);
+  return gtxBatch(group).then(function (res) { gtxFails = 0; return res; })
+    .catch(function () { gtxFails++; return translateSeq(group); });
+}
+function translateVisible(items) {
+  if (!state.translate || state.trBusy) return;
+  var seen = Object.create(null), titles = [], descs = [];
+  items.forEach(function (it) {
+    if (it.lang !== 'en') return;
+    if (it.title && !trCache[it.title] && !trTried[it.title] && !seen[it.title]) { seen[it.title] = 1; titles.push(it.title); }
+    if (it.desc && !trCache[it.desc] && !trTried[it.desc] && !seen[it.desc]) { seen[it.desc] = 1; descs.push(it.desc); }
+  });
+  var pending = titles.concat(descs).slice(0, 30);
+  if (!pending.length) return;
+  state.trBusy = true; renderStatus();
+  var groups = [], changed = false, failed = 0;
+  for (var i = 0; i < pending.length; i += 10) groups.push(pending.slice(i, i + 10));
+  var p = Promise.resolve();
+  groups.forEach(function (g) {
+    p = p.then(function () { return translateGroup(g); }).then(function (res) {
+      g.forEach(function (t, k) {
+        trTried[t] = 1;
+        if (res[k]) { trCache[t] = res[k]; changed = true; } else failed++;
+      });
+    }, function () { g.forEach(function (t) { trTried[t] = 1; failed++; }); });
+  });
+  p.then(function () {
+    state.trBusy = false; state.trErr = failed > 0 && !changed;
+    if (changed) saveTr();
+    render();
+  });
+}
+
+/* ---------------- الحالة ---------------- */
+var state = { translate: true, trBusy: false, trErr: false, notifyOn: false, items: [], status: [], cat: 'all', lang: 'all', q: '', limit: PAGE, loading: false, updated: 0, error: '' };
+
+function loadAll() {
+  if (state.loading) return Promise.resolve();
+  state.loading = true; setBusy(true);
+  var queue = SOURCES.slice(), all = [], status = [];
+  function worker() {
+    var s = queue.shift();
+    if (!s) return Promise.resolve();
+    return fetchSource(s).then(function (items) {
+      var n = 0;
+      items.forEach(function (r) { var it = normalize(r, s); if (it) { all.push(it); n++; } });
+      status.push({ name: s.name, ok: true, n: n });
+    }, function (e) {
+      status.push({ name: s.name, ok: false, err: e.message });
+    }).then(worker);
+  }
+  return Promise.all([worker(), worker(), worker(), worker()]).then(function () {
+    state.status = status;
+    if (all.length) {
+      state.items = dedupe(all).sort(function (a, b) { return b.date - a.date; });
+      state.updated = Date.now(); state.error = '';
+      store(CACHE_KEY, { t: state.updated, items: state.items, status: status });
+    } else {
+      state.error = 'تعذّر جلب الأخبار. تأكد من اتصال الإنترنت ثم أعد المحاولة.';
+    }
+  }).then(function () {
+    state.loading = false; setBusy(false); render(); afterUpdate();
+  });
+}
+
+function setBusy(b) { $('#refresh').classList.toggle('spin', b); }
+
+/* ---------------- العرض ---------------- */
+function filtered(ignoreCat) {
+  var q = state.q.trim().toLowerCase();
+  return state.items.filter(function (it) {
+    if (!ignoreCat && state.cat !== 'all' && it.cat !== state.cat) return false;
+    if (state.lang !== 'all' && it.lang !== state.lang) return false;
+    if (q && (it.title + ' ' + it.desc + ' ' + tr(it.title) + ' ' + tr(it.desc)).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+
+function renderTabs() {
+  var base = filtered(true), box = $('#tabs');
+  box.textContent = '';
+  [['all', 'الكل']].concat(Object.keys(CATS).map(function (k) { return [k, CATS[k]]; })).forEach(function (p) {
+    var n = p[0] === 'all' ? base.length : base.filter(function (i) { return i.cat === p[0]; }).length;
+    var b = h('button', { 'class': 'tab', role: 'tab', 'aria-selected': String(state.cat === p[0]) },
+      p[1], h('span', { 'class': 'n' }, String(n)));
+    b.addEventListener('click', function () { state.cat = p[0]; state.limit = PAGE; render(); });
+    box.appendChild(b);
+  });
+}
+
+function card(it, urgent) {
+  var body = h('div', { 'class': 'body' });
+  var meta = h('div', { 'class': 'meta' },
+    h('span', { 'class': 'badge', 'data-cat': it.cat }, CATS[it.cat]),
+    h('span', null, it.source),
+    it.date ? h('span', { title: new Date(it.date).toLocaleString('ar') }, ago(it.date)) : null);
+  body.appendChild(meta);
+  var tt = tr(it.title), td = tr(it.desc);
+  body.appendChild(h('a', { 'class': 'title', dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, tt || it.title));
+  if (tt) body.appendChild(h('div', { 'class': 'orig' }, it.title));
+  if (it.desc) body.appendChild(h('p', { 'class': 'desc', dir: 'auto' }, td || it.desc));
+  var actions = h('div', { 'class': 'actions' },
+    h('a', { href: it.link, target: '_blank', rel: 'noopener noreferrer' }, 'قراءة المقال'));
+  if (it.lang === 'en') {
+    actions.appendChild(h('a', {
+      href: 'https://translate.google.com/translate?sl=auto&tl=ar&u=' + encodeURIComponent(it.link),
+      target: '_blank', rel: 'noopener noreferrer'
+    }, 'ترجمة المقال كاملًا'));
+  }
+  body.appendChild(actions);
+  var c = h('article', { 'class': 'card' + (urgent ? ' urgent' : '') });
+  if (it.img) {
+    var im = h('img', { src: it.img, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    im.addEventListener('error', function () { im.remove(); });
+    c.appendChild(im);
+  }
+  c.appendChild(body);
+  return c;
+}
+
+function renderStatus() {
+  var box = $('#sources');
+  box.textContent = '';
+  state.status.forEach(function (s) {
+    var row = h('div', { style: 'flex-wrap:wrap' }, h('span', null, s.name),
+      s.ok ? h('span', { 'class': 'ok' }, '✓ ' + s.n + ' خبر')
+           : h('span', { 'class': 'bad' }, '✕ تعذّر'));
+    if (!s.ok && s.err) row.appendChild(h('small', { dir: 'ltr', style: 'flex-basis:100%;color:var(--muted);word-break:break-all' }, s.err.slice(0, 140)));
+    box.appendChild(row);
+  });
+  var u = $('#updated');
+  if (state.loading && !state.updated) u.textContent = 'جارٍ التحديث…';
+  else if (state.updated) u.textContent = 'آخر تحديث: ' + ago(state.updated) + (state.loading ? ' • جارٍ التحديث…' : '');
+  else u.textContent = '';
+  if (state.trBusy) u.textContent += ' • جارٍ الترجمة…';
+  else if (state.trErr && state.translate) u.textContent += ' • الترجمة غير متاحة الآن';
+}
+
+function render() {
+  renderTabs(); renderStatus(); renderBar();
+  var list = $('#list');
+  list.textContent = '';
+  if (!state.items.length) {
+    list.appendChild(h('div', { 'class': 'state' }, state.error || 'جارٍ تحميل الأخبار…'));
+    if (state.error) {
+      var rb = h('button', { 'class': 'more' }, 'إعادة المحاولة');
+      rb.addEventListener('click', loadAll);
+      list.appendChild(rb);
+    }
+    return;
+  }
+  var items = filtered(false);
+  if (!items.length) { list.appendChild(h('div', { 'class': 'state' }, 'لا توجد نتائج مطابقة.')); return; }
+  var brk = state.q ? [] : items.filter(isBreaking).slice(0, 8);
+  if (brk.length) {
+    var sec = h('section', { 'class': 'brk' }, h('h2', null, '🚨 أخبار عاجلة'));
+    brk.forEach(function (it) { sec.appendChild(card(it, true)); });
+    list.appendChild(sec);
+    list.appendChild(h('h2', { style: 'font-size:15px;margin:14px 0 0' }, 'آخر الأخبار'));
+  }
+  var rest = brk.length ? items.filter(function (it) { return brk.indexOf(it) < 0; }) : items;
+  rest.slice(0, state.limit).forEach(function (it) { list.appendChild(card(it)); });
+  translateVisible(brk.concat(rest.slice(0, state.limit)));
+  if (rest.length > state.limit) {
+    var mb = h('button', { 'class': 'more' }, 'عرض المزيد (' + (rest.length - state.limit) + ')');
+    mb.addEventListener('click', function () { state.limit += PAGE; render(); });
+    list.appendChild(mb);
+  }
+}
+
+/* ---------------- الأحداث ---------------- */
+var timer;
+$('#q').addEventListener('input', function (e) {
+  clearTimeout(timer);
+  timer = setTimeout(function () { state.q = e.target.value; state.limit = PAGE; render(); }, 200);
+});
+$('#lang').addEventListener('change', function (e) { state.lang = e.target.value; state.limit = PAGE; render(); });
+$('#refresh').addEventListener('click', loadAll);
+$('#toggleSources').addEventListener('click', function () { $('#sources').classList.toggle('open'); });
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  $('#theme').textContent = t === 'dark' ? '☀' : '☾';
+}
+var saved = store('mr_theme');
+applyTheme(saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('#theme').addEventListener('click', function () {
+  var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(t); store('mr_theme', t);
+});
+
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && Date.now() - state.updated > REFRESH_MS) loadAll();
+});
+setInterval(function () { if (!document.hidden) loadAll(); }, REFRESH_MS);
+setInterval(function () { if (!state.loading) renderStatus(); }, 60000);
+
+function setTrBtn() { $('#trbtn').classList.toggle('on', state.translate); }
+$('#trbtn').addEventListener('click', function () {
+  state.translate = !state.translate; store('mr_translate', state.translate); setTrBtn(); render();
+});
+$('#bell').addEventListener('click', function () {
+  if (state.notifyOn) { state.notifyOn = false; store('mr_notify', false); setBell(); return; }
+  try {
+    if (!('Notification' in window)) { $('#updated').textContent = 'متصفحك لا يدعم الإشعارات'; return; }
+    Promise.resolve(Notification.requestPermission()).then(function (p) {
+      state.notifyOn = p === 'granted'; store('mr_notify', state.notifyOn); setBell();
+      if (!state.notifyOn) $('#updated').textContent = 'لم يُسمح بالإشعارات من إعدادات المتصفح';
+    });
+  } catch (e) { $('#updated').textContent = 'الإشعارات غير متاحة هنا'; }
+});
+setInterval(function () { if (brkList.length > 1) { brkIdx++; renderBar(); } }, 6000);
+setInterval(function () { if (!document.hidden) loadPrices(); }, 60000);
+
+/* ---------------- تسجيل التطبيق (PWA) ---------------- */
+try {
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+} catch (e) {}
+
+/* ---------------- البدء ---------------- */
+var cached = store(CACHE_KEY);
+if (cached && cached.items && cached.items.length) {
+  state.items = cached.items; state.status = cached.status || []; state.updated = cached.t;
+}
+state.notifyOn = !!store('mr_notify'); setBell();
+state.translate = store('mr_translate') !== false; setTrBtn();
+loadPrices();
+render(); afterUpdate();
+if (!state.updated || Date.now() - state.updated > CACHE_MAX_AGE) loadAll();
+})();
+</script>
+</body>
+</html>
