@@ -142,24 +142,30 @@ function gn(q, lang) {               // بحث أخبار جوجل (RSS)
   return 'https://news.google.com/rss/search?q=' + encodeURIComponent(q) +
     (ar ? '&hl=ar&gl=SA&ceid=SA:ar' : '&hl=en-US&gl=US&ceid=US:en');
 }
+function yf(sym) {                   // خلاصة عناوين Yahoo Finance لرمز معيّن
+  return 'https://feeds.finance.yahoo.com/rss/2.0/headline?s=' + encodeURIComponent(sym) + '&region=US&lang=en-US';
+}
+/* auto:true = يُصنَّف كل خبر تلقائيًا (ذهب / كريبتو / أسواق) حسب كلمات العنوان */
 var SOURCES = [
   // كريبتو
   { name: 'Cointelegraph', cat: 'crypto', lang: 'en', url: 'https://cointelegraph.com/rss' },
   { name: 'CoinDesk',      cat: 'crypto', lang: 'en', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/' },
   { name: 'Decrypt',       cat: 'crypto', lang: 'en', url: 'https://decrypt.co/feed' },
+  { name: 'Cointelegraph عربي', cat: 'crypto', lang: 'ar', url: 'https://ar.cointelegraph.com/rss' },
+  // الذهب
+  { name: 'Yahoo Finance — الذهب', cat: 'gold', lang: 'en', url: yf('GC=F,GLD') },
+  // الأسواق (تُصنَّف تلقائيًا، فيدخل منها الذهب والكريبتو في تبويباتها)
+  { name: 'الشرق للأعمال', cat: 'markets', lang: 'ar', auto: true, url: 'https://asharqbusiness.com/rss.xml' },
+  { name: 'CNBC Finance',  cat: 'markets', lang: 'en', auto: true, url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html' },
+  { name: 'Yahoo Finance', cat: 'markets', lang: 'en', auto: true, url: 'https://finance.yahoo.com/news/rssindex' },
+  { name: 'MarketWatch',   cat: 'markets', lang: 'en', auto: true, url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' },
+  // أخبار جوجل: قد يحجبها بعض الوسطاء، وإن تعذّرت يظهر السبب في «حالة المصادر»
   { name: 'أخبار جوجل — كريبتو (عربي)', cat: 'crypto', lang: 'ar', gnews: true,
     url: gn('بيتكوين OR كريبتو OR "العملات الرقمية" OR "العملات المشفرة" when:3d', 'ar') },
-  // الذهب
   { name: 'أخبار جوجل — الذهب (عربي)', cat: 'gold', lang: 'ar', gnews: true,
     url: gn('"سعر الذهب" OR "أسعار الذهب" OR "أوقية الذهب" when:3d', 'ar') },
-  { name: 'Google News — Gold', cat: 'gold', lang: 'en', gnews: true,
-    url: gn('"gold price" OR "gold futures" OR XAUUSD when:2d', 'en') },
-  // الأسواق
-  { name: 'أخبار جوجل — الأسواق (عربي)', cat: 'markets', lang: 'ar', gnews: true,
-    url: gn('البورصة OR "وول ستريت" OR "الأسواق المالية" OR "أسعار النفط" OR الدولار when:2d', 'ar') },
-  { name: 'CNBC Finance',  cat: 'markets', lang: 'en', url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html' },
-  { name: 'Yahoo Finance', cat: 'markets', lang: 'en', url: 'https://finance.yahoo.com/news/rssindex' },
-  { name: 'MarketWatch',   cat: 'markets', lang: 'en', url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories' }
+  { name: 'أخبار جوجل — الأسواق (عربي)', cat: 'markets', lang: 'ar', gnews: true, auto: true,
+    url: gn('البورصة OR "وول ستريت" OR "الأسواق المالية" OR "أسعار النفط" OR الدولار when:2d', 'ar') }
 ];
 
 var CATS = { crypto: 'كريبتو', gold: 'الذهب', markets: 'الأسواق' };
@@ -171,6 +177,7 @@ var PAGE = 30;
 
 var PROXIES = [
   function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+  function (u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
   function (u) { return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
 ];
 
@@ -306,6 +313,15 @@ function fetchSource(src) {
   return chain.catch(function () { throw new Error(errs.join(' | ')); });
 }
 
+var GOLD_RE = /ذهب|الذهب|أونصة|الأونصة|\bgold\b|bullion|\bXAU/i;
+var CRYPTO_RE = /بيتكوين|بتكوين|كريبتو|العملات الرقمية|العملات المشفرة|مشفرة|إيثريوم|إيثيريوم|بينانس|\bbitcoin\b|\bcrypto|ethereum|\bBTC\b|\bETH\b|stablecoin/i;
+function pickCat(title, src) {
+  if (!src.auto) return src.cat;
+  if (GOLD_RE.test(title)) return 'gold';
+  if (CRYPTO_RE.test(title)) return 'crypto';
+  return src.cat;
+}
+
 function normalize(raw, src) {
   var title = stripHtml(raw.title), publisher = '';
   if (!title || !/^https?:\/\//i.test(raw.link || '')) return null;
@@ -319,7 +335,7 @@ function normalize(raw, src) {
   return {
     title: title, link: raw.link, date: raw.date || 0, desc: desc,
     img: /^https:\/\//i.test(raw.img || '') ? raw.img : '',
-    source: publisher || src.name, cat: src.cat, lang: src.lang
+    source: publisher || src.name, cat: pickCat(title, src), lang: src.lang
   };
 }
 
@@ -483,9 +499,11 @@ function renderStatus() {
   var box = $('#sources');
   box.textContent = '';
   state.status.forEach(function (s) {
-    box.appendChild(h('div', null, h('span', null, s.name),
+    var row = h('div', { style: 'flex-wrap:wrap' }, h('span', null, s.name),
       s.ok ? h('span', { 'class': 'ok' }, '✓ ' + s.n + ' خبر')
-           : h('span', { 'class': 'bad', title: s.err || '' }, '✕ تعذّر')));
+           : h('span', { 'class': 'bad' }, '✕ تعذّر'));
+    if (!s.ok && s.err) row.appendChild(h('small', { dir: 'ltr', style: 'flex-basis:100%;color:var(--muted);word-break:break-all' }, s.err.slice(0, 140)));
+    box.appendChild(row);
   });
   var u = $('#updated');
   if (state.loading && !state.updated) u.textContent = 'جارٍ التحديث…';
