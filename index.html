@@ -87,6 +87,8 @@ main{padding-bottom:40px}
 .desc{margin:2px 0 6px;font-size:13.5px;color:var(--muted)}
 .actions{display:flex;gap:14px;font-size:12.5px}
 .actions a{color:var(--accent);text-decoration:none}
+.orig{font-size:12px;color:var(--muted);direction:ltr;text-align:left;margin:0 0 3px;line-height:1.4}
+.icon-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .state{text-align:center;color:var(--muted);padding:40px 10px}
 .more{display:block;margin:14px auto;border:1px solid var(--line);background:var(--card);color:var(--text);
   border-radius:10px;padding:8px 22px;font-family:inherit;font-size:14px;cursor:pointer}
@@ -100,6 +102,7 @@ footer{color:var(--muted);font-size:11.5px;text-align:center;padding:0 14px 30px
     <div class="top">
       <h1>رادار الأسواق <small>كريبتو • ذهب • أسواق مالية</small></h1>
       <div class="btns">
+        <button class="icon-btn on" id="trbtn" title="ترجمة تلقائية للعربية" aria-label="ترجمة تلقائية">ع</button>
         <button class="icon-btn" id="bell" title="إشعارات العاجل" aria-label="إشعارات العاجل">🔕</button>
         <button class="icon-btn" id="refresh" title="تحديث" aria-label="تحديث">⟳</button>
         <button class="icon-btn" id="theme" title="الوضع الليلي" aria-label="تبديل الوضع الليلي">☾</button>
@@ -362,7 +365,7 @@ function renderBar() {
   var it = brkList[brkIdx];
   bar.style.display = 'flex';
   bar.appendChild(h('span', { 'class': 'tag' }, 'عاجل'));
-  bar.appendChild(h('a', { dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, it.title));
+  bar.appendChild(h('a', { dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, tr(it.title) || it.title));
   bar.appendChild(h('span', { 'class': 'cnt' }, (brkIdx + 1) + '/' + brkList.length));
 }
 
@@ -379,7 +382,7 @@ function afterUpdate() {
   var fresh = brk.filter(function (i) { return !set[i.link]; });
   if (seen.length && fresh.length && state.notifyOn && notifyOk()) {
     fresh.slice(0, 3).forEach(function (i) {
-      try { new Notification('عاجل — ' + i.source, { body: i.title, tag: i.link }); } catch (e) {}
+      try { new Notification('عاجل — ' + i.source, { body: tr(i.title) || i.title, tag: i.link }); } catch (e) {}
     });
   }
   brk.forEach(function (i) { set[i.link] = 1; });
@@ -410,8 +413,85 @@ function loadPrices() {
     }).catch(function () {});
 }
 
+/* ---------------- الترجمة التلقائية للعربية ----------------
+   تُترجم العناوين والملخصات الإنجليزية للعناصر الظاهرة فقط، وتُحفظ في المتصفح فلا تُعاد. */
+var trCache = store('mr_tr') || {};
+var trTried = Object.create(null), gtxFails = 0;
+function tr(text) { return (state.translate && text && trCache[text]) || ''; }
+function saveTr() {
+  var k = Object.keys(trCache);
+  if (k.length > 700) k.slice(0, k.length - 700).forEach(function (x) { delete trCache[x]; });
+  store('mr_tr', trCache);
+}
+function gtxBatch(texts) {                       // سطر لكل نص، ثم نقسم الناتج على الأسطر
+  var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=ar&dt=t&q=' +
+    encodeURIComponent(texts.join('\n'));
+  return timedFetch(url, 12000).then(function (r) { return r.json(); }).then(function (j) {
+    var out = '';
+    (j && j[0] || []).forEach(function (seg) { if (seg && seg[0]) out += seg[0]; });
+    var lines = out.replace(/\n+$/, '').split('\n');
+    if (lines.length !== texts.length) throw new Error('mismatch');
+    return lines.map(function (l) { return l.trim(); });
+  });
+}
+function myMemory(t) {                           // مزوّد احتياطي
+  return timedFetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(t.slice(0, 480)) + '&langpair=en|ar', 10000)
+    .then(function (r) { return r.json(); }).then(function (j) {
+      var x = j && j.responseData && j.responseData.translatedText;
+      if (!x || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(x)) throw new Error('mm');
+      return x;
+    });
+}
+function translateOne(t) {
+  if (gtxFails < 2) {
+    return gtxBatch([t]).then(function (r) { gtxFails = 0; return r[0]; })
+      .catch(function () { gtxFails++; return myMemory(t); });
+  }
+  return myMemory(t);
+}
+function translateSeq(group) {
+  var out = [], p = Promise.resolve();
+  group.forEach(function (t, i) {
+    p = p.then(function () { return translateOne(t).then(function (x) { out[i] = x; }, function () { out[i] = ''; }); });
+  });
+  return p.then(function () { return out; });
+}
+function translateGroup(group) {
+  if (gtxFails >= 2) return translateSeq(group);
+  return gtxBatch(group).then(function (res) { gtxFails = 0; return res; })
+    .catch(function () { gtxFails++; return translateSeq(group); });
+}
+function translateVisible(items) {
+  if (!state.translate || state.trBusy) return;
+  var seen = Object.create(null), titles = [], descs = [];
+  items.forEach(function (it) {
+    if (it.lang !== 'en') return;
+    if (it.title && !trCache[it.title] && !trTried[it.title] && !seen[it.title]) { seen[it.title] = 1; titles.push(it.title); }
+    if (it.desc && !trCache[it.desc] && !trTried[it.desc] && !seen[it.desc]) { seen[it.desc] = 1; descs.push(it.desc); }
+  });
+  var pending = titles.concat(descs).slice(0, 30);
+  if (!pending.length) return;
+  state.trBusy = true; renderStatus();
+  var groups = [], changed = false, failed = 0;
+  for (var i = 0; i < pending.length; i += 10) groups.push(pending.slice(i, i + 10));
+  var p = Promise.resolve();
+  groups.forEach(function (g) {
+    p = p.then(function () { return translateGroup(g); }).then(function (res) {
+      g.forEach(function (t, k) {
+        trTried[t] = 1;
+        if (res[k]) { trCache[t] = res[k]; changed = true; } else failed++;
+      });
+    }, function () { g.forEach(function (t) { trTried[t] = 1; failed++; }); });
+  });
+  p.then(function () {
+    state.trBusy = false; state.trErr = failed > 0 && !changed;
+    if (changed) saveTr();
+    render();
+  });
+}
+
 /* ---------------- الحالة ---------------- */
-var state = { notifyOn: false, items: [], status: [], cat: 'all', lang: 'all', q: '', limit: PAGE, loading: false, updated: 0, error: '' };
+var state = { translate: true, trBusy: false, trErr: false, notifyOn: false, items: [], status: [], cat: 'all', lang: 'all', q: '', limit: PAGE, loading: false, updated: 0, error: '' };
 
 function loadAll() {
   if (state.loading) return Promise.resolve();
@@ -450,7 +530,7 @@ function filtered(ignoreCat) {
   return state.items.filter(function (it) {
     if (!ignoreCat && state.cat !== 'all' && it.cat !== state.cat) return false;
     if (state.lang !== 'all' && it.lang !== state.lang) return false;
-    if (q && (it.title + ' ' + it.desc).toLowerCase().indexOf(q) < 0) return false;
+    if (q && (it.title + ' ' + it.desc + ' ' + tr(it.title) + ' ' + tr(it.desc)).toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
 }
@@ -474,15 +554,17 @@ function card(it, urgent) {
     h('span', null, it.source),
     it.date ? h('span', { title: new Date(it.date).toLocaleString('ar') }, ago(it.date)) : null);
   body.appendChild(meta);
-  body.appendChild(h('a', { 'class': 'title', dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, it.title));
-  if (it.desc) body.appendChild(h('p', { 'class': 'desc', dir: 'auto' }, it.desc));
+  var tt = tr(it.title), td = tr(it.desc);
+  body.appendChild(h('a', { 'class': 'title', dir: 'auto', href: it.link, target: '_blank', rel: 'noopener noreferrer' }, tt || it.title));
+  if (tt) body.appendChild(h('div', { 'class': 'orig' }, it.title));
+  if (it.desc) body.appendChild(h('p', { 'class': 'desc', dir: 'auto' }, td || it.desc));
   var actions = h('div', { 'class': 'actions' },
     h('a', { href: it.link, target: '_blank', rel: 'noopener noreferrer' }, 'قراءة المقال'));
   if (it.lang === 'en') {
     actions.appendChild(h('a', {
       href: 'https://translate.google.com/translate?sl=auto&tl=ar&u=' + encodeURIComponent(it.link),
       target: '_blank', rel: 'noopener noreferrer'
-    }, 'ترجمة للعربية'));
+    }, 'ترجمة المقال كاملًا'));
   }
   body.appendChild(actions);
   var c = h('article', { 'class': 'card' + (urgent ? ' urgent' : '') });
@@ -509,6 +591,8 @@ function renderStatus() {
   if (state.loading && !state.updated) u.textContent = 'جارٍ التحديث…';
   else if (state.updated) u.textContent = 'آخر تحديث: ' + ago(state.updated) + (state.loading ? ' • جارٍ التحديث…' : '');
   else u.textContent = '';
+  if (state.trBusy) u.textContent += ' • جارٍ الترجمة…';
+  else if (state.trErr && state.translate) u.textContent += ' • الترجمة غير متاحة الآن';
 }
 
 function render() {
@@ -535,6 +619,7 @@ function render() {
   }
   var rest = brk.length ? items.filter(function (it) { return brk.indexOf(it) < 0; }) : items;
   rest.slice(0, state.limit).forEach(function (it) { list.appendChild(card(it)); });
+  translateVisible(brk.concat(rest.slice(0, state.limit)));
   if (rest.length > state.limit) {
     var mb = h('button', { 'class': 'more' }, 'عرض المزيد (' + (rest.length - state.limit) + ')');
     mb.addEventListener('click', function () { state.limit += PAGE; render(); });
@@ -569,6 +654,10 @@ document.addEventListener('visibilitychange', function () {
 setInterval(function () { if (!document.hidden) loadAll(); }, REFRESH_MS);
 setInterval(function () { if (!state.loading) renderStatus(); }, 60000);
 
+function setTrBtn() { $('#trbtn').classList.toggle('on', state.translate); }
+$('#trbtn').addEventListener('click', function () {
+  state.translate = !state.translate; store('mr_translate', state.translate); setTrBtn(); render();
+});
 $('#bell').addEventListener('click', function () {
   if (state.notifyOn) { state.notifyOn = false; store('mr_notify', false); setBell(); return; }
   try {
@@ -595,6 +684,7 @@ if (cached && cached.items && cached.items.length) {
   state.items = cached.items; state.status = cached.status || []; state.updated = cached.t;
 }
 state.notifyOn = !!store('mr_notify'); setBell();
+state.translate = store('mr_translate') !== false; setTrBtn();
 loadPrices();
 render(); afterUpdate();
 if (!state.updated || Date.now() - state.updated > CACHE_MAX_AGE) loadAll();
