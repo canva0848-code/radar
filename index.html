@@ -89,6 +89,17 @@ main{padding-bottom:40px}
 .actions a{color:var(--accent);text-decoration:none}
 .orig{font-size:12px;color:var(--muted);direction:ltr;text-align:left;margin:0 0 3px;line-height:1.4}
 .icon-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rows{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
+.row{display:flex;gap:12px;padding:11px 12px;border-bottom:1px solid var(--line);color:var(--text);text-decoration:none;align-items:flex-start}
+.row:last-child{border-bottom:0}
+.row:active{background:var(--bg)}
+.row .t{flex:0 0 38px;font-size:12px;color:var(--muted);padding-top:4px;text-align:center}
+.row .c{min-width:0;flex:1}
+.row .rt{display:block;font-weight:600;font-size:15.5px;line-height:1.6}
+.row .rm{display:flex;align-items:center;gap:7px;margin-top:3px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.row .fav{width:14px;height:14px;border-radius:3px}
+.row.urgent{border-inline-start:4px solid var(--bad)}
+.row.urgent .t{color:var(--bad);font-weight:700}
 .state{text-align:center;color:var(--muted);padding:40px 10px}
 .more{display:block;margin:14px auto;border:1px solid var(--line);background:var(--card);color:var(--text);
   border-radius:10px;padding:8px 22px;font-family:inherit;font-size:14px;cursor:pointer}
@@ -102,6 +113,7 @@ footer{color:var(--muted);font-size:11.5px;text-align:center;padding:0 14px 30px
     <div class="top">
       <h1>رادار الأسواق <small>كريبتو • ذهب • أسواق مالية</small></h1>
       <div class="btns">
+        <button class="icon-btn on" id="viewbtn" title="عرض مضغوط / بطاقات" aria-label="تبديل العرض">☰</button>
         <button class="icon-btn on" id="trbtn" title="ترجمة تلقائية للعربية" aria-label="ترجمة تلقائية">ع</button>
         <button class="icon-btn" id="bell" title="إشعارات العاجل" aria-label="إشعارات العاجل">🔕</button>
         <button class="icon-btn" id="refresh" title="تحديث" aria-label="تحديث">⟳</button>
@@ -391,7 +403,8 @@ function afterUpdate() {
 
 /* ---------------- الأسعار (CoinGecko) ---------------- */
 var PRICE_IDS = [['bitcoin', 'BTC', ''], ['ethereum', 'ETH', ''],
-  ['pax-gold', 'ذهب', 'سعر رمز PAXG المدعوم بأونصة ذهب — مؤشر قريب لسعر الأونصة وليس سعر البورصة الرسمي']];
+  ['pax-gold', 'ذهب', 'سعر رمز PAXG المدعوم بأونصة ذهب — مؤشر قريب لسعر الأونصة وليس سعر البورصة الرسمي'],
+  ['solana', 'SOL', ''], ['binancecoin', 'BNB', ''], ['ripple', 'XRP', '']];
 function loadPrices() {
   var ids = PRICE_IDS.map(function (p) { return p[0]; }).join(',');
   return timedFetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd&include_24hr_change=true', 10000)
@@ -467,7 +480,7 @@ function translateVisible(items) {
   items.forEach(function (it) {
     if (it.lang !== 'en') return;
     if (it.title && !trCache[it.title] && !trTried[it.title] && !seen[it.title]) { seen[it.title] = 1; titles.push(it.title); }
-    if (it.desc && !trCache[it.desc] && !trTried[it.desc] && !seen[it.desc]) { seen[it.desc] = 1; descs.push(it.desc); }
+    if (!state.compact && it.desc && !trCache[it.desc] && !trTried[it.desc] && !seen[it.desc]) { seen[it.desc] = 1; descs.push(it.desc); }
   });
   var pending = titles.concat(descs).slice(0, 30);
   if (!pending.length) return;
@@ -491,7 +504,7 @@ function translateVisible(items) {
 }
 
 /* ---------------- الحالة ---------------- */
-var state = { translate: true, trBusy: false, trErr: false, notifyOn: false, items: [], status: [], cat: 'all', lang: 'all', q: '', limit: PAGE, loading: false, updated: 0, error: '' };
+var state = { compact: true, translate: true, trBusy: false, trErr: false, notifyOn: false, items: [], status: [], cat: 'all', lang: 'all', q: '', limit: PAGE, loading: false, updated: 0, error: '' };
 
 function loadAll() {
   if (state.loading) return Promise.resolve();
@@ -545,6 +558,40 @@ function renderTabs() {
     b.addEventListener('click', function () { state.cat = p[0]; state.limit = PAGE; render(); });
     box.appendChild(b);
   });
+}
+
+function agoShort(ms) {
+  var m = Math.floor(Math.max(0, Date.now() - ms) / 60000);
+  if (m < 1) return 'الآن';
+  if (m < 60) return m + 'د';
+  var hr = Math.floor(m / 60);
+  return hr < 24 ? hr + 'س' : Math.floor(hr / 24) + 'ي';
+}
+function row(it, urgent) {                          // سطر مضغوط: وقت + عنوان + مصدر
+  var host = '';
+  try { host = new URL(it.link).hostname; } catch (e) {}
+  var rm = h('span', { 'class': 'rm' });
+  if (host && host.indexOf('google.') < 0) {
+    var im = h('img', { 'class': 'fav', src: 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=32',
+      alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    im.addEventListener('error', function () { im.remove(); });
+    rm.appendChild(im);
+  }
+  rm.appendChild(h('span', null, it.source));
+  rm.appendChild(h('span', { 'class': 'badge', 'data-cat': it.cat }, CATS[it.cat]));
+  return h('a', { 'class': 'row' + (urgent ? ' urgent' : ''), href: it.link, target: '_blank', rel: 'noopener noreferrer' },
+    h('span', { 'class': 't', title: it.date ? new Date(it.date).toLocaleString('ar') : '' }, it.date ? agoShort(it.date) : ''),
+    h('span', { 'class': 'c' }, h('span', { 'class': 'rt', dir: 'auto' }, tr(it.title) || it.title), rm));
+}
+function wrapList(arr, urgent) {
+  if (!state.compact) {
+    var f = document.createDocumentFragment();
+    arr.forEach(function (it) { f.appendChild(card(it, urgent)); });
+    return f;
+  }
+  var box = h('div', { 'class': 'rows' });
+  arr.forEach(function (it) { box.appendChild(row(it, urgent)); });
+  return box;
 }
 
 function card(it, urgent) {
@@ -613,12 +660,12 @@ function render() {
   var brk = state.q ? [] : items.filter(isBreaking).slice(0, 8);
   if (brk.length) {
     var sec = h('section', { 'class': 'brk' }, h('h2', null, '🚨 أخبار عاجلة'));
-    brk.forEach(function (it) { sec.appendChild(card(it, true)); });
+    sec.appendChild(wrapList(brk, true));
     list.appendChild(sec);
     list.appendChild(h('h2', { style: 'font-size:15px;margin:14px 0 0' }, 'آخر الأخبار'));
   }
   var rest = brk.length ? items.filter(function (it) { return brk.indexOf(it) < 0; }) : items;
-  rest.slice(0, state.limit).forEach(function (it) { list.appendChild(card(it)); });
+  list.appendChild(wrapList(rest.slice(0, state.limit), false));
   translateVisible(brk.concat(rest.slice(0, state.limit)));
   if (rest.length > state.limit) {
     var mb = h('button', { 'class': 'more' }, 'عرض المزيد (' + (rest.length - state.limit) + ')');
@@ -642,7 +689,7 @@ function applyTheme(t) {
   $('#theme').textContent = t === 'dark' ? '☀' : '☾';
 }
 var saved = store('mr_theme');
-applyTheme(saved || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+applyTheme(saved || 'dark');
 $('#theme').addEventListener('click', function () {
   var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
   applyTheme(t); store('mr_theme', t);
@@ -654,6 +701,10 @@ document.addEventListener('visibilitychange', function () {
 setInterval(function () { if (!document.hidden) loadAll(); }, REFRESH_MS);
 setInterval(function () { if (!state.loading) renderStatus(); }, 60000);
 
+function setViewBtn() { $('#viewbtn').classList.toggle('on', state.compact); }
+$('#viewbtn').addEventListener('click', function () {
+  state.compact = !state.compact; store('mr_view', state.compact ? 'compact' : 'cards'); setViewBtn(); render();
+});
 function setTrBtn() { $('#trbtn').classList.toggle('on', state.translate); }
 $('#trbtn').addEventListener('click', function () {
   state.translate = !state.translate; store('mr_translate', state.translate); setTrBtn(); render();
@@ -685,6 +736,7 @@ if (cached && cached.items && cached.items.length) {
 }
 state.notifyOn = !!store('mr_notify'); setBell();
 state.translate = store('mr_translate') !== false; setTrBtn();
+state.compact = store('mr_view') !== 'cards'; setViewBtn();
 loadPrices();
 render(); afterUpdate();
 if (!state.updated || Date.now() - state.updated > CACHE_MAX_AGE) loadAll();
